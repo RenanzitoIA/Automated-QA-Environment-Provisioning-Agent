@@ -1,0 +1,16 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - PORT=8080
+    command: ["sh","-c","python -m http.server $PORT"]
+    ports:
+      - "8080:8080"
+    networks:
+      - qa_net
+
+networks:
+  qa_net:
+    external: true

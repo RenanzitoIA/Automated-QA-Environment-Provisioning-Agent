@@ -1,0 +1,57 @@
+{
+  "name": "QA Env - GC",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "hour": 0,
+              "minute": 0,
+              "weekday": 0
+            }
+          ]
+        },
+        "rule": "everyMinute"
+      },
+      "id": "Cron",
+      "name": "Cron (10m)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        300,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://provisioner:8088/gc",
+        "jsonParameters": true,
+        "options": {}
+      },
+      "id": "HTTP",
+      "name": "HTTP GC",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        540,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Cron (10m)": {
+      "main": [
+        [
+          {
+            "node": "HTTP GC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}

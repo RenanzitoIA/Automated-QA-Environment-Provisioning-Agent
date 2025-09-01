@@ -1,0 +1,103 @@
+{
+  "name": "QA Env - Provision",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "qa/provision",
+        "options": {}
+      },
+      "id": "Webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        280,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const body = $json;\n// support Slack slash command text parsing like: \"repo=my-repo branch=feature/x service=web ttl=90\"\nif (body.text && typeof body.text === 'string') {\n  const params = {};\n  body.text.split(/\\s+/).forEach(kv => { const [k,v] = kv.split('='); if (k && v) params[k]=v; });\n  return [{ json: {\n    branch: params.branch || 'main',\n    service: params.service || 'web',\n    ttl_minutes: params.ttl ? Number(params.ttl) : undefined,\n  }}];\n}\nreturn [{ json: {\n  branch: body.branch || 'main',\n  service: body.service || 'web',\n  ttl_minutes: body.ttl_minutes,\n}}];"
+      },
+      "id": "Parse",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        520,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://provisioner:8088/provision",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "={{$json}}"
+      },
+      "id": "HTTP",
+      "name": "HTTP Provision",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        760,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "channelId": "={{$env.SLACK_CHANNEL_ID}}",
+        "text": "={{`\u2705 *Ambiente criado*\\n\u2022 Branch: ${$json.branch}\\n\u2022 SHA: ${$json.sha}\\n\u2022 URL: ${$json.url}\\n\u2022 Expira (epoch): ${$json.expires_at}\\n\u2022 env_id: ${$json.env_id}`}}"
+      },
+      "id": "Slack",
+      "name": "Slack Notify",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        300
+      ],
+      "credentials": {}
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Input": {
+      "main": [
+        [
+          {
+            "node": "HTTP Provision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Provision": {
+      "main": [
+        [
+          {
+            "node": "Slack Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}
